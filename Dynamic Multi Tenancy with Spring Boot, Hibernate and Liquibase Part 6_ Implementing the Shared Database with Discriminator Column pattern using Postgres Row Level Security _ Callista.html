@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<!-- saved from url=(0091)https://callistaenterprise.se/blogg/teknik/2020/10/24/multi-tenancy-with-spring-boot-part6/ -->
+<html lang="sv-se" class="wf-adobecaslonpro-n4-active wf-sourcecodepro-n7-active wf-adobecaslonpro-i4-active wf-futuraptcondensed-n4-active wf-futuraptcondensed-n7-active wf-adobecaslonpro-n6-active wf-sourcecodepro-n4-active wf-futuraptcondensed-n5-active wf-active"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="Callista Enterprise - seniora IT-arkitekter och systemutvecklare inom Java, öppen källkod, agil utveckling och systemintegration">
+    <!--<meta name="viewport" content="width=device-width, initial-scale=1">-->
+    <meta name="viewport" content="initial-scale=1.0001, minimum-scale=1.0001, maximum-scale=1.0001, user-scalable=no">
+
+    <link rel="icon" href="https://callistaenterprise.se/images/icons/callista_favicon.svg" type="image/x-icon">
+    <link rel="shortcut icon" href="https://callistaenterprise.se/images/icons/callista_favicon.svg" type="image/x-icon">
+    <link rel="apple-touch-icon" href="https://callistaenterprise.se/images/icons/callista_favicon_160x160.png">
+
+    <title>Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6: Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security | Callista</title>
+
+    <link rel="stylesheet" href="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/style.css">
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed for callistaenterprise.se" href="https://callistaenterprise.se/feed.xml">
+
+    <!--[if lte IE 8]>
+    <style>* { display: none !important; }</style>
+    <meta http-equiv="refresh" content="0; url=/oldie/"/>
+    <![endif]-->
+
+    <script async="" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/analytics.js.download"></script><script src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/804675599711872" async=""></script><script async="" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/fbevents.js.download"></script><script type="text/javascript" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/kig5egm.js.download"></script>
+    <style type="text/css">.tk-adobe-caslon-pro{font-family:"adobe-caslon-pro",serif;}.tk-futura-pt-condensed{font-family:"futura-pt-condensed",sans-serif;}.tk-source-code-pro{font-family:"source-code-pro",sans-serif;}</style><style type="text/css">@font-face{font-family:tk-adobe-caslon-pro-n4;src:url(https://use.typekit.net/af/3cbd9b/000000000000000000012d68/27/l?subset_id=2&fvd=n4&v=3) format("woff2"),url(https://use.typekit.net/af/3cbd9b/000000000000000000012d68/27/d?subset_id=2&fvd=n4&v=3) format("woff"),url(https://use.typekit.net/af/3cbd9b/000000000000000000012d68/27/a?subset_id=2&fvd=n4&v=3) format("opentype");font-weight:400;font-style:normal;font-display:auto;}@font-face{font-family:tk-adobe-caslon-pro-i4;src:url(https://use.typekit.net/af/200aad/000000000000000000012d67/27/l?subset_id=2&fvd=i4&v=3) format("woff2"),url(https://use.typekit.net/af/200aad/000000000000000000012d67/27/d?subset_id=2&fvd=i4&v=3) format("woff"),url(https://use.typekit.net/af/200aad/000000000000000000012d67/27/a?subset_id=2&fvd=i4&v=3) format("opentype");font-weight:400;font-style:italic;font-display:auto;}@font-face{font-family:tk-adobe-caslon-pro-n6;src:url(https://use.typekit.net/af/68efc1/000000000000000000012d69/27/l?subset_id=2&fvd=n6&v=3) format("woff2"),url(https://use.typekit.net/af/68efc1/000000000000000000012d69/27/d?subset_id=2&fvd=n6&v=3) format("woff"),url(https://use.typekit.net/af/68efc1/000000000000000000012d69/27/a?subset_id=2&fvd=n6&v=3) format("opentype");font-weight:600;font-style:normal;font-display:auto;}@font-face{font-family:tk-futura-pt-condensed-n4;src:url(https://use.typekit.net/af/6f8764/000000000000000000012039/27/l?subset_id=2&fvd=n4&v=3) format("woff2"),url(https://use.typekit.net/af/6f8764/000000000000000000012039/27/d?subset_id=2&fvd=n4&v=3) format("woff"),url(https://use.typekit.net/af/6f8764/000000000000000000012039/27/a?subset_id=2&fvd=n4&v=3) format("opentype");font-weight:400;font-style:normal;font-display:auto;}@font-face{font-family:tk-futura-pt-condensed-n5;src:url(https://use.typekit.net/af/accb3b/00000000000000000001203b/27/l?subset_id=2&fvd=n5&v=3) format("woff2"),url(https://use.typekit.net/af/accb3b/00000000000000000001203b/27/d?subset_id=2&fvd=n5&v=3) format("woff"),url(https://use.typekit.net/af/accb3b/00000000000000000001203b/27/a?subset_id=2&fvd=n5&v=3) format("opentype");font-weight:500;font-style:normal;font-display:auto;}@font-face{font-family:tk-futura-pt-condensed-n7;src:url(https://use.typekit.net/af/64e0cf/00000000000000000001203d/27/l?subset_id=2&fvd=n7&v=3) format("woff2"),url(https://use.typekit.net/af/64e0cf/00000000000000000001203d/27/d?subset_id=2&fvd=n7&v=3) format("woff"),url(https://use.typekit.net/af/64e0cf/00000000000000000001203d/27/a?subset_id=2&fvd=n7&v=3) format("opentype");font-weight:700;font-style:normal;font-display:auto;}@font-face{font-family:tk-source-code-pro-n7;src:url(https://use.typekit.net/af/756772/0000000000000000000179d5/27/l?subset_id=2&fvd=n7&v=3) format("woff2"),url(https://use.typekit.net/af/756772/0000000000000000000179d5/27/d?subset_id=2&fvd=n7&v=3) format("woff"),url(https://use.typekit.net/af/756772/0000000000000000000179d5/27/a?subset_id=2&fvd=n7&v=3) format("opentype");font-weight:700;font-style:normal;font-display:auto;}@font-face{font-family:tk-source-code-pro-n4;src:url(https://use.typekit.net/af/3c21b3/0000000000000000000179cf/27/l?subset_id=2&fvd=n4&v=3) format("woff2"),url(https://use.typekit.net/af/3c21b3/0000000000000000000179cf/27/d?subset_id=2&fvd=n4&v=3) format("woff"),url(https://use.typekit.net/af/3c21b3/0000000000000000000179cf/27/a?subset_id=2&fvd=n4&v=3) format("opentype");font-weight:400;font-style:normal;font-display:auto;}</style><script type="text/javascript">
+        try {
+            Typekit.load({ async: true });
+        } catch (e) {
+        }
+    </script>
+
+    <!-- Facebook Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window,document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+     fbq('init', '804675599711872');
+     fbq('track', 'PageView');
+    </script>
+    <noscript>
+     <img height="1" width="1" src="https://www.facebook.com/tr?id=804675599711872&ev=PageView&noscript=1"/>
+    </noscript>
+    <!-- End Facebook Pixel Code -->
+
+<script type="text/javascript" async="" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/embed.js.download"></script><link rel="prefetch" as="style" href="https://c.disquscdn.com/next/embed/styles/lounge.fd7a422849a52b7b84c0455e2671d573.css"><link rel="prefetch" as="script" href="https://c.disquscdn.com/next/embed/common.bundle.a0ed109e21af94c55c513d7580d5773c.js"><link rel="prefetch" as="script" href="https://c.disquscdn.com/next/embed/lounge.bundle.7e4d408dc5aa1f8d59ee30aa6088b986.js"><link rel="prefetch" as="script" href="https://disqus.com/next/config.js"><style type="text/css">@font-face{font-family:adobe-caslon-pro;src:url(https://use.typekit.net/af/3cbd9b/000000000000000000012d68/27/l?subset_id=2&fvd=n4&v=3) format("woff2"),url(https://use.typekit.net/af/3cbd9b/000000000000000000012d68/27/d?subset_id=2&fvd=n4&v=3) format("woff"),url(https://use.typekit.net/af/3cbd9b/000000000000000000012d68/27/a?subset_id=2&fvd=n4&v=3) format("opentype");font-weight:400;font-style:normal;font-display:auto;}@font-face{font-family:adobe-caslon-pro;src:url(https://use.typekit.net/af/200aad/000000000000000000012d67/27/l?subset_id=2&fvd=i4&v=3) format("woff2"),url(https://use.typekit.net/af/200aad/000000000000000000012d67/27/d?subset_id=2&fvd=i4&v=3) format("woff"),url(https://use.typekit.net/af/200aad/000000000000000000012d67/27/a?subset_id=2&fvd=i4&v=3) format("opentype");font-weight:400;font-style:italic;font-display:auto;}@font-face{font-family:adobe-caslon-pro;src:url(https://use.typekit.net/af/68efc1/000000000000000000012d69/27/l?subset_id=2&fvd=n6&v=3) format("woff2"),url(https://use.typekit.net/af/68efc1/000000000000000000012d69/27/d?subset_id=2&fvd=n6&v=3) format("woff"),url(https://use.typekit.net/af/68efc1/000000000000000000012d69/27/a?subset_id=2&fvd=n6&v=3) format("opentype");font-weight:600;font-style:normal;font-display:auto;}@font-face{font-family:futura-pt-condensed;src:url(https://use.typekit.net/af/6f8764/000000000000000000012039/27/l?subset_id=2&fvd=n4&v=3) format("woff2"),url(https://use.typekit.net/af/6f8764/000000000000000000012039/27/d?subset_id=2&fvd=n4&v=3) format("woff"),url(https://use.typekit.net/af/6f8764/000000000000000000012039/27/a?subset_id=2&fvd=n4&v=3) format("opentype");font-weight:400;font-style:normal;font-display:auto;}@font-face{font-family:futura-pt-condensed;src:url(https://use.typekit.net/af/accb3b/00000000000000000001203b/27/l?subset_id=2&fvd=n5&v=3) format("woff2"),url(https://use.typekit.net/af/accb3b/00000000000000000001203b/27/d?subset_id=2&fvd=n5&v=3) format("woff"),url(https://use.typekit.net/af/accb3b/00000000000000000001203b/27/a?subset_id=2&fvd=n5&v=3) format("opentype");font-weight:500;font-style:normal;font-display:auto;}@font-face{font-family:futura-pt-condensed;src:url(https://use.typekit.net/af/64e0cf/00000000000000000001203d/27/l?subset_id=2&fvd=n7&v=3) format("woff2"),url(https://use.typekit.net/af/64e0cf/00000000000000000001203d/27/d?subset_id=2&fvd=n7&v=3) format("woff"),url(https://use.typekit.net/af/64e0cf/00000000000000000001203d/27/a?subset_id=2&fvd=n7&v=3) format("opentype");font-weight:700;font-style:normal;font-display:auto;}@font-face{font-family:source-code-pro;src:url(https://use.typekit.net/af/756772/0000000000000000000179d5/27/l?subset_id=2&fvd=n7&v=3) format("woff2"),url(https://use.typekit.net/af/756772/0000000000000000000179d5/27/d?subset_id=2&fvd=n7&v=3) format("woff"),url(https://use.typekit.net/af/756772/0000000000000000000179d5/27/a?subset_id=2&fvd=n7&v=3) format("opentype");font-weight:700;font-style:normal;font-display:auto;}@font-face{font-family:source-code-pro;src:url(https://use.typekit.net/af/3c21b3/0000000000000000000179cf/27/l?subset_id=2&fvd=n4&v=3) format("woff2"),url(https://use.typekit.net/af/3c21b3/0000000000000000000179cf/27/d?subset_id=2&fvd=n4&v=3) format("woff"),url(https://use.typekit.net/af/3c21b3/0000000000000000000179cf/27/a?subset_id=2&fvd=n4&v=3) format("opentype");font-weight:400;font-style:normal;font-display:auto;}</style><script async="" id="dsq_recs_scr" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/recommendations.js.download"></script><link rel="prefetch" as="style" href="https://c.disquscdn.com/next/recommendations/styles/recommendations.7a0a0fc46819bca7c5bed35193afbc84.css"><link rel="prefetch" as="script" href="https://c.disquscdn.com/next/recommendations/common.bundle.3599f83da3e37f2d8675b56e0b4f87a4.js"><link rel="prefetch" as="script" href="https://c.disquscdn.com/next/recommendations/recommendations.bundle.926bc472e4859a48daa346b4ba2ab4f4.js"><link rel="prefetch" as="script" href="https://disqus.com/next/config.js"><script src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/alfie_v4.63f1ab6d6b9d5807dc0c94ef3fe0b.download" async="" charset="UTF-8"></script></head>
+<body>
+
+    <header class="ce-header" data-scroll="0">
+    <nav>
+        <img alt="menubg" class="ce-menu-icon" style="z-index:3; top: 0px; width: 50px; height: 100%;" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/menu_background.png">
+        <a class="ce-logotype" href="https://callistaenterprise.se/" style="z-index: 2;">
+            <img alt="Callista" style="max-width: 100%; height: auto;" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/callista_small2.svg">
+        </a>
+        <table>
+            <tbody><tr>
+                <td>
+            <ul id="menu-primary" class="ce-menu-primary">
+                
+                    
+                            <li><a href="https://callistaenterprise.se/om/">Om oss</a></li>
+                    
+                
+                    
+                            <li><a href="https://callistaenterprise.se/erbjudanden/">Erbjudanden</a></li>
+                    
+                
+                    
+                            <li><a href="https://callistaenterprise.se/event/">Event</a></li>
+                    
+                
+                    
+                        
+                            <li><a class="ce-active" href="https://callistaenterprise.se/blogg/">Blogg</a></li>
+                        
+                    
+                
+                    
+                            <li><a href="https://callistaenterprise.se/om/jobb/">Jobba hos oss</a></li>
+                    
+                
+            </ul>
+                </td>
+
+                <td>
+            <ul class="ce-menu-secondary">
+                
+                <li><a href="https://callistaenterprise.se/english/">English</a></li>
+                
+            </ul>
+                </td>
+            </tr>
+        </tbody></table>
+            <a id="menu" class="ce-menu-icon" href="https://callistaenterprise.se/blogg/teknik/2020/10/24/multi-tenancy-with-spring-boot-part6/#" style="z-index: 4;">
+                <img alt="Visa meny" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/menu.png">
+            </a>
+            <a class="ce-search-icon" href="https://callistaenterprise.se/blogg/teknik/2020/10/24/multi-tenancy-with-spring-boot-part6/#">
+                <img alt="Sök" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/search.png">
+            </a>
+
+        
+    </nav>
+</header>
+
+
+    <div class="ce-main">
+        <section class="ce-start" style="background-image: url(&quot;/images/backgrounds/blogg.jpg&quot;);">
+    <article>
+        <h1>Blogg</h1>
+        <p class="ce-ingress">
+            Här finns tekniska artiklar, presentationer och nyheter om arkitektur och systemutveckling. Håll dig uppdaterad, följ oss på <a class="ce-active" href="http://twitter.com/callistaent">Twitter</a>
+        </p>
+    </article>
+</section>
+
+<section class="ce-section">
+    <div class="ce-content">
+        
+        
+
+        
+        
+
+        <article class="ce-blog">
+            <header>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <img alt="Callista medarbetare Björn Beskow" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/bjornbeskow_mini.png">
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <h2>
+        <a href="https://callistaenterprise.se/blogg/teknik/2020/10/24/multi-tenancy-with-spring-boot-part6/">Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6: Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security</a>
+        
+        
+    </h2>
+    <h3>
+        <time datetime="2020-10-24T00:00:00+00:00">
+            24 October 2020
+        </time>
+        //
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+        
+        
+        <a href="https://callistaenterprise.se/om/medarbetare/bjornbeskow/">Björn Beskow</a>
+        
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    </h3>
+    
+</header>
+
+
+
+
+<p>In the <a href="https://callistaenterprise.se/blogg/teknik/2020/10/17/multi-tenancy-with-spring-boot-part5/">last part</a>, we implemented the Shared Database with Discriminator Column pattern usign Hibernate Filters. We observed that it will scale well, but the data isolation guarantee is troublesome due to shortcomings in the Hibernate Filter mechanism.</p>
+
+<p>In this part, we will tweak the solution and redo the critical Filtering part using an advanced database mechanism: Row Level Security.</p>
+
+<p></p>
+
+<h3 id="blog-series-parts">Blog Series Parts</h3>
+<ul>
+  <li><a href="https://callistaenterprise.se/blogg/teknik/2020/09/19/multi-tenancy-with-spring-boot-part1/">Part 1: What is Multi Tenancy</a></li>
+  <li><a href="https://callistaenterprise.se/blogg/teknik/2020/09/20/multi-tenancy-with-spring-boot-part2/">Part 2: Outlining an Implementation Strategy for Multi Tenant Data Access</a></li>
+  <li><a href="https://callistaenterprise.se/blogg/teknik/2020/10/03/multi-tenancy-with-spring-boot-part3/">Part 3: Implementing the Database per Tenant pattern</a></li>
+  <li><a href="https://callistaenterprise.se/blogg/teknik/2020/10/10/multi-tenancy-with-spring-boot-part4/">Part 4: Implementing the Schema per Tenant pattern</a></li>
+  <li><a href="https://callistaenterprise.se/blogg/teknik/2020/10/17/multi-tenancy-with-spring-boot-part5/">Part 5: Implementing the Shared database with Discriminator Column pattern using Hibernate Filters</a></li>
+  <li>Part 6: Implementing the Shared database with Discriminator Column pattern using Postgres Row Level Security (this part)</li>
+  <li>Part 7: Summing up (forthcoming)</li>
+</ul>
+
+<h3 id="data-isolation">Data Isolation</h3>
+
+<p>In order to achieve proper data isolation between different tenants, we need to include an extra <code class="language-plaintext highlighter-rouge">where</code> condition on the tenantId for all data access. Doing so in application code can be troublesome and error-prone, as we saw. The burden of proof lies on us that the mechanism is properly implemented and applied. Clearly, it would be better to get that guarantee from the Database instead.</p>
+
+<p><img src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/Lock.png" alt="Lock"></p>
+
+<p>Modern databases like Postgres or SQLServer provides a <a href="https://www.postgresql.org/docs/9.5/ddl-rowsecurity.html">Row Level Security</a> mechanism, where access to individual rows can be declaratively and transparently restricted to specific users based on various criteria. It can thus be used to implement the data isolation between tenants.</p>
+
+<h4 id="defining-row-level-policies">Defining Row Level Policies</h4>
+
+<p>In Postgres, this means, for each table</p>
+
+<ol>
+  <li>enabling Row Level Security for the table, and</li>
+  <li>define a Policy for the table, referencing the <code class="language-plaintext highlighter-rouge">tenant_id</code> discriminator column.</li>
+</ol>
+
+<p>In the Postgres documentaion examples on defining policies, <code class="language-plaintext highlighter-rouge">current_user</code> is used to define the policies. That won’t work in this case, since we don’t have separate database users per tenant. Instead, we can utilize a custom <em>session parameter</em> e.g. <code class="language-plaintext highlighter-rouge">app.tenant_id</code> to associate current tenant with a database session (i.e. a database connection). Setting a session parameter is done using a Postgres-specific SQL statement:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight language-sql"><code class=" language-sql"><span class="token string">"SET app.tenant_id TO '"</span> <span class="token operator">+</span> tenantId <span class="token operator">+</span> <span class="token string">"'"</span>
+</code></pre></div></div>
+
+<p>The session parameter can be referenced in the policy definition. Wrapped as a Liquibase changeset, it could look like this:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="pi">-</span> <span class="na">changeSet</span><span class="pi">:</span>
+    <span class="na">id</span><span class="pi">:</span> <span class="s">product_row_level_security</span>
+    <span class="na">author</span><span class="pi">:</span> <span class="s">bjobes</span>
+    <span class="na">changes</span><span class="pi">:</span>
+    <span class="pi">-</span>  <span class="na">sql</span><span class="pi">:</span>
+        <span class="na">dbms</span><span class="pi">:</span> <span class="s1">'</span><span class="s">postgresql'</span>
+        <span class="na">sql</span><span class="pi">:</span> <span class="pi">&gt;-</span>
+            <span class="s">ALTER TABLE product ENABLE ROW LEVEL SECURITY;</span>
+            <span class="s">DROP POLICY IF EXISTS product_tenant_isolation_policy ON product;</span>
+            <span class="s">CREATE POLICY product_tenant_isolation_policy ON product</span>
+                <span class="s">USING (tenant_id = current_setting('app.tenant_id')::VARCHAR);</span>
+
+</code></pre></div></div>
+
+<h4 id="table-owner-user-and-app-user">Table Owner user and App User</h4>
+
+<p>Row Level Security policies are by default <strong>not</strong> applied for the table owner (which makes sense, since the table owner must be able to access all rows for administrative purposes, such as backups). Hence we must make sure that we use a different database user for the application to access the database (which is a best practice to do anyway). Let’s add the creation of an application user to our Liquibase migration (where the username, password, schema and database name are passed in as parameters) :</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="pi">-</span> <span class="na">changeSet</span><span class="pi">:</span>
+    <span class="na">id</span><span class="pi">:</span> <span class="s">app_user</span>
+    <span class="na">author</span><span class="pi">:</span> <span class="s">bjobes</span>
+    <span class="na">changes</span><span class="pi">:</span>
+    <span class="pi">-</span>  <span class="na">sql</span><span class="pi">:</span>
+        <span class="na">dbms</span><span class="pi">:</span> <span class="s1">'</span><span class="s">postgresql'</span>
+        <span class="na">sql</span><span class="pi">:</span> <span class="pi">&gt;-</span>
+            <span class="s">CREATE USER ${username} WITH PASSWORD '${password}';</span>
+            <span class="s">GRANT CONNECT ON DATABASE ${database} TO app_user;</span>
+            <span class="s">ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} GRANT SELECT, INSERT, UPDATE, DELETE, REFERENCES</span>
+                <span class="s">ON TABLES TO ${username};</span>
+            <span class="s">ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} GRANT USAGE ON SEQUENCES TO ${username};</span>
+            <span class="s">ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} GRANT EXECUTE ON FUNCTIONS TO ${username};</span>
+</code></pre></div></div>
+
+<h4 id="associate-tenant-with-database-connection">Associate Tenant with Database Connection</h4>
+
+<p>With the Row Level Security policy in place, we now need to set the current tenantId on each database connection before using it, and remove the tenantId once done with the connection. Hence we need a Tenant-Aware DataSource that transparently manages the decoration of tenantId on connections:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight language-java"><code class=" language-java"><span class="token comment" spellcheck="true">/**
+ * Tenant-Aware Datasource that decorates Connections with
+ * current tenant information.
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TenantAwareDataSource</span> <span class="token keyword">extends</span> <span class="token class-name">DelegatingDataSource</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token function">TenantAwareDataSource<span class="token punctuation">(</span></span>DataSource targetDataSource<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">super</span><span class="token punctuation">(</span>targetDataSource<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    @Override
+    <span class="token keyword">public</span> Connection <span class="token function">getConnection<span class="token punctuation">(</span></span><span class="token punctuation">)</span> <span class="token keyword">throws</span> SQLException <span class="token punctuation">{</span>
+        <span class="token keyword">final</span> Connection connection <span class="token operator">=</span> <span class="token function">getTargetDataSource<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getConnection<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">setTenantId<span class="token punctuation">(</span></span>connection<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token function">getTenantAwareConnectionProxy<span class="token punctuation">(</span></span>connection<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    @Override
+    <span class="token keyword">public</span> Connection <span class="token function">getConnection<span class="token punctuation">(</span></span>String username<span class="token punctuation">,</span> String password<span class="token punctuation">)</span> <span class="token keyword">throws</span> SQLException <span class="token punctuation">{</span>
+        <span class="token keyword">final</span> Connection connection <span class="token operator">=</span> <span class="token function">getTargetDataSource<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getConnection<span class="token punctuation">(</span></span>username<span class="token punctuation">,</span> password<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token function">setTenantId<span class="token punctuation">(</span></span>connection<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token function">getTenantAwareConnectionProxy<span class="token punctuation">(</span></span>connection<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">setTenantId<span class="token punctuation">(</span></span>Connection connection<span class="token punctuation">)</span> <span class="token keyword">throws</span> SQLException <span class="token punctuation">{</span>
+        <span class="token keyword">try</span> <span class="token punctuation">(</span>Statement sql <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">createStatement<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            String tenantId <span class="token operator">=</span> TenantContext<span class="token punctuation">.</span><span class="token function">getTenantId<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            sql<span class="token punctuation">.</span><span class="token function">execute<span class="token punctuation">(</span></span><span class="token string">"SET app.tenant_id TO '"</span> <span class="token operator">+</span> tenantId <span class="token operator">+</span> <span class="token string">"'"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">clearTenantId<span class="token punctuation">(</span></span>Connection connection<span class="token punctuation">)</span> <span class="token keyword">throws</span> SQLException <span class="token punctuation">{</span>
+        <span class="token keyword">try</span> <span class="token punctuation">(</span>Statement sql <span class="token operator">=</span> connection<span class="token punctuation">.</span><span class="token function">createStatement<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            sql<span class="token punctuation">.</span><span class="token function">execute<span class="token punctuation">(</span></span><span class="token string">"RESET app.tenant_id"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment" spellcheck="true">// Connection Proxy that intercepts close() to reset the tenant_id
+</span>    <span class="token keyword">protected</span> Connection <span class="token function">getTenantAwareConnectionProxy<span class="token punctuation">(</span></span>Connection connection<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token punctuation">(</span>Connection<span class="token punctuation">)</span> Proxy<span class="token punctuation">.</span><span class="token function">newProxyInstance<span class="token punctuation">(</span></span>
+                ConnectionProxy<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">.</span><span class="token function">getClassLoader<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                <span class="token keyword">new</span> <span class="token class-name">Class</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{</span>ConnectionProxy<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+                <span class="token keyword">new</span> <span class="token class-name">TenantAwareDataSource<span class="token punctuation">.</span>TenantAwareInvocationHandler</span><span class="token punctuation">(</span>connection<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment" spellcheck="true">// Connection Proxy invocation handler that intercepts close() to reset the tenant_id
+</span>    <span class="token keyword">private</span> <span class="token keyword">class</span> <span class="token class-name">TenantAwareInvocationHandler</span> <span class="token keyword">implements</span> <span class="token class-name">InvocationHandler</span> <span class="token punctuation">{</span>
+        <span class="token keyword">private</span> <span class="token keyword">final</span> Connection target<span class="token punctuation">;</span>
+
+        <span class="token keyword">public</span> <span class="token function">TenantAwareInvocationHandler<span class="token punctuation">(</span></span>Connection target<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>target <span class="token operator">=</span> target<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        @Nullable
+        <span class="token keyword">public</span> Object <span class="token function">invoke<span class="token punctuation">(</span></span>Object proxy<span class="token punctuation">,</span> Method method<span class="token punctuation">,</span> Object<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token keyword">throws</span> Throwable <span class="token punctuation">{</span>
+            <span class="token keyword">switch</span> <span class="token punctuation">(</span>method<span class="token punctuation">.</span><span class="token function">getName<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">case</span> <span class="token string">"equals"</span><span class="token operator">:</span>
+                    <span class="token keyword">return</span> proxy <span class="token operator">==</span> args<span class="token number">[0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+                <span class="token keyword">case</span> <span class="token string">"hashCode"</span><span class="token operator">:</span>
+                    <span class="token keyword">return</span> System<span class="token punctuation">.</span><span class="token function">identityHashCode<span class="token punctuation">(</span></span>proxy<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">case</span> <span class="token string">"toString"</span><span class="token operator">:</span>
+                    <span class="token keyword">return</span> <span class="token string">"Tenant-aware proxy for target Connection ["</span> <span class="token operator">+</span> <span class="token keyword">this</span><span class="token punctuation">.</span>target<span class="token punctuation">.</span><span class="token function">toString<span class="token punctuation">(</span></span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">"]"</span><span class="token punctuation">;</span>
+                <span class="token keyword">case</span> <span class="token string">"unwrap"</span><span class="token operator">:</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>Class<span class="token punctuation">)</span> args<span class="token number">[0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">isInstance<span class="token punctuation">(</span></span>proxy<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">return</span> proxy<span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">return</span> method<span class="token punctuation">.</span><span class="token function">invoke<span class="token punctuation">(</span></span>target<span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token keyword">case</span> <span class="token string">"isWrapperFor"</span><span class="token operator">:</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span>Class<span class="token punctuation">)</span> args<span class="token number">[0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">isInstance<span class="token punctuation">(</span></span>proxy<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">return</span> method<span class="token punctuation">.</span><span class="token function">invoke<span class="token punctuation">(</span></span>target<span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token keyword">case</span> <span class="token string">"getTargetConnection"</span><span class="token operator">:</span>
+                    <span class="token keyword">return</span> target<span class="token punctuation">;</span>
+                <span class="token keyword">default</span><span class="token operator">:</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>method<span class="token punctuation">.</span><span class="token function">getName<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">equals<span class="token punctuation">(</span></span><span class="token string">"close"</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token function">clearTenantId<span class="token punctuation">(</span></span>target<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                    <span class="token keyword">return</span> method<span class="token punctuation">.</span><span class="token function">invoke<span class="token punctuation">(</span></span>target<span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre></div></div>
+
+<p>A bit bulky, but a well proven mechanism to decorate a datasource with additional functionality.</p>
+
+<h4 id="configuring-the-datasources">Configuring the DataSources</h4>
+
+<p>We need to configure two DataSources: One master DataSource for Liquibase Database migrations, and one tenant-aware datasource for the application to use.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight language-java"><code class=" language-java">@Configuration
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DataSourceConfiguration</span> <span class="token punctuation">{</span>
+
+    @Bean
+    @<span class="token function">ConfigurationProperties<span class="token punctuation">(</span></span><span class="token string">"multitenancy.master.datasource"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> DataSourceProperties <span class="token function">masterDataSourceProperties<span class="token punctuation">(</span></span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">DataSourceProperties</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    @Bean
+    @LiquibaseDataSource
+    @<span class="token function">ConfigurationProperties<span class="token punctuation">(</span></span><span class="token string">"multitenancy.master.datasource.hikari"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> DataSource <span class="token function">masterDataSource<span class="token punctuation">(</span></span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        HikariDataSource dataSource <span class="token operator">=</span> <span class="token function">masterDataSourceProperties<span class="token punctuation">(</span></span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">initializeDataSourceBuilder<span class="token punctuation">(</span></span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">type<span class="token punctuation">(</span></span>HikariDataSource<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">build<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataSource<span class="token punctuation">.</span><span class="token function">setPoolName<span class="token punctuation">(</span></span><span class="token string">"masterDataSource"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> dataSource<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    @Bean
+    @Primary
+    @<span class="token function">ConfigurationProperties<span class="token punctuation">(</span></span><span class="token string">"multitenancy.tenant.datasource"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> DataSourceProperties <span class="token function">tenantDataSourceProperties<span class="token punctuation">(</span></span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">DataSourceProperties</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    @Bean
+    @Primary
+    @<span class="token function">ConfigurationProperties<span class="token punctuation">(</span></span><span class="token string">"multitenancy.tenant.datasource.hikari"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> DataSource <span class="token function">tenantDataSource<span class="token punctuation">(</span></span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        HikariDataSource dataSource <span class="token operator">=</span> <span class="token function">tenantDataSourceProperties<span class="token punctuation">(</span></span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">initializeDataSourceBuilder<span class="token punctuation">(</span></span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">type<span class="token punctuation">(</span></span>HikariDataSource<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">build<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dataSource<span class="token punctuation">.</span><span class="token function">setPoolName<span class="token punctuation">(</span></span><span class="token string">"tenantDataSource"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">TenantAwareDataSource</span><span class="token punctuation">(</span>dataSource<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre></div></div>
+
+<p>Just as before, since we mark the tenantDataSource as @Primary, it will be used by default in any component that autowires a DataSource.</p>
+
+<h4 id="discriminator-column-and-entitylistener">Discriminator column and EntityListener</h4>
+
+<p>The EntityListener mechanism for setting the tenantId when creating new entities remains the same:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight language-java"><code class=" language-java"><span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">TenantAware</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">void</span> <span class="token function">setTenantId<span class="token punctuation">(</span></span>String tenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    
+<span class="token punctuation">}</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">TenantListener</span> <span class="token punctuation">{</span>
+
+    @PreUpdate
+    @PreRemove
+    @PrePersist
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setTenant<span class="token punctuation">(</span></span>TenantAware entity<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">final</span> String tenantId <span class="token operator">=</span> TenantContext<span class="token punctuation">.</span><span class="token function">getTenantId<span class="token punctuation">(</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        entity<span class="token punctuation">.</span><span class="token function">setTenantId<span class="token punctuation">(</span></span>tenantId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+@MappedSuperclass
+@Getter
+@Setter
+@NoArgsConstructor
+@<span class="token function">EntityListeners<span class="token punctuation">(</span></span>TenantListener<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">abstract</span> <span class="token keyword">class</span> <span class="token class-name">AbstractBaseEntity</span> <span class="token keyword">implements</span> <span class="token class-name">TenantAware</span><span class="token punctuation">,</span> Serializable <span class="token punctuation">{</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">long</span> serialVersionUID <span class="token operator">=</span> 1L<span class="token punctuation">;</span>
+
+    @<span class="token function">Size<span class="token punctuation">(</span></span>max <span class="token operator">=</span><span class="token number"> 30</span><span class="token punctuation">)</span>
+    @<span class="token function">Column<span class="token punctuation">(</span></span>name <span class="token operator">=</span> <span class="token string">"tenant_id"</span><span class="token punctuation">)</span>
+    <span class="token keyword">private</span> String tenantId<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token function">AbstractBaseEntity<span class="token punctuation">(</span></span>String tenantId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>tenantId <span class="token operator">=</span> tenantId<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+</code></pre></div></div>
+
+<p>And just as before, all entities will need to extend <code class="language-plaintext highlighter-rouge">AbstractBaseEntity</code>:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight language-java"><code class=" language-java">@Entity
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Product</span> <span class="token keyword">extends</span> <span class="token class-name">AbstractBaseEntity</span> <span class="token punctuation">{</span>
+<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+<span class="token punctuation">}</span>
+</code></pre></div></div>
+
+<p>And finally the externalized configuration in application.yml:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">spring</span><span class="pi">:</span>
+<span class="nn">...</span>
+  <span class="na">liquibase</span><span class="pi">:</span>
+    <span class="na">changeLog</span><span class="pi">:</span> <span class="s">classpath:db/changelog/db.changelog-tenant.yaml</span>
+    <span class="na">parameters</span><span class="pi">:</span>
+      <span class="na">database</span><span class="pi">:</span> <span class="s">blog</span>
+      <span class="na">schema</span><span class="pi">:</span> <span class="s">public</span>
+      <span class="na">username</span><span class="pi">:</span> <span class="s">app_user</span>
+      <span class="na">password</span><span class="pi">:</span> <span class="s">secret</span>
+<span class="na">multitenancy</span><span class="pi">:</span>
+  <span class="na">master</span><span class="pi">:</span>
+    <span class="na">datasource</span><span class="pi">:</span>
+      <span class="na">url</span><span class="pi">:</span> <span class="s">jdbc:postgresql://localhost:5432/blog</span>
+      <span class="na">username</span><span class="pi">:</span> <span class="s">postgres</span>
+      <span class="na">password</span><span class="pi">:</span> <span class="s">secret</span>
+      <span class="na">hikari</span><span class="pi">:</span>
+        <span class="na">maximum-pool-size</span><span class="pi">:</span> <span class="m">1</span>
+  <span class="na">tenant</span><span class="pi">:</span>
+    <span class="na">datasource</span><span class="pi">:</span>
+      <span class="na">url</span><span class="pi">:</span> <span class="s">${multitenancy.master.datasource.url}</span>
+      <span class="na">username</span><span class="pi">:</span> <span class="s">app_user</span>
+      <span class="na">password</span><span class="pi">:</span> <span class="s">secret</span>
+</code></pre></div></div>
+
+<h3 id="what-have-we-achieved">What have we achieved?</h3>
+
+<p>We now have a much simplified implementation of the Shared Database with Discriminator Column pattern. The data isolation guarantee between tenants is provided by the Row Level Security mechanism in Postgres (provided we never allow an application to access the database using the database owner user). This solution should be both robust and highly scalable.</p>
+
+<p>A fully working, minimalistic example can be found in the <a href="https://github.com/callistaenterprise/blog-multitenancy">Github repository</a> for this blog series, in the <a href="https://github.com/callistaenterprise/blog-multitenancy/tree/shared_database_postgres_rls">shared_database_postgres_rls branch</a>.</p>
+
+<h2 id="whats-next">What’s next?</h2>
+
+<p>In the next and final part, we’ll recapitulate the pros and cons of the different patterns, and discuss some migration strategies and practices to be able to start with one and but be prepared to migrate to another pattern if necessary.</p>
+
+<h3 id="references">References</h3>
+
+<p>The following links have been very useful inspiration when preparing this material:</p>
+
+<p><a href="https://aws.amazon.com/blogs/database/multi-tenant-data-isolation-with-postgresql-row-level-security/">aws.amazon.com/blogs/database/multi-tenant-data-isolation-with-postgresql-row-level-security</a></p>
+
+<p><a href="https://www.bytefish.de/blog/spring_boot_multitenancy_using_rls.html">www.bytefish.de/blog/spring_boot_multitenancy_using_rls.html</a></p>
+
+
+
+
+
+
+
+
+
+            <div class="ce-blog-thanks">
+              Tack för att du läser Callistas blogg. <br>
+              Hjälp oss att nå ut med information genom att dela nyheter och artiklar i ditt nätverk.<br>
+            </div>
+
+            
+
+
+    
+<div class="ce-blog-share">
+    <a class="ce-blog-share-element social-twitter" href="https://twitter.com/intent/tweet?text=Multi%20Tenancy%20With%20Spring%20Boot%20Part6&amp;url=https://callistaenterprise.se/blogg/teknik/2020/10/24/multi-tenancy-with-spring-boot-part6/&amp;via=callistaent&amp;hashtags=" target="_blank" title="Share this post on Twitter"></a>
+    <a class="ce-blog-share-element social-facebook" href="https://www.facebook.com/sharer/sharer.php?t=Multi%20Tenancy%20With%20Spring%20Boot%20Part6&amp;u=https://callistaenterprise.se/blogg/teknik/2020/10/24/multi-tenancy-with-spring-boot-part6/" target="_blank" title="Share this post on Facebook"></a>
+    <a class="ce-blog-share-element social-linkedin" href="http://www.linkedin.com/shareArticle?mini=true&amp;title=Multi%20Tenancy%20With%20Spring%20Boot%20Part6&amp;url=https://callistaenterprise.se/blogg/teknik/2020/10/24/multi-tenancy-with-spring-boot-part6/&amp;source=http%3a%2f%2fzhangwenli.com" target="_blank" title="Share this post on LinkedIn"></a>
+</div>
+    
+        </article>
+    </div>
+</section>
+
+
+<section class="ce-section">
+    <heading>
+        <h1>Kommentarer</h1>
+    </heading>
+    <div class="ce-content">
+        <div id="disqus_recommendations" style="margin-bottom: 12px;"><iframe id="dsq-app460" name="dsq-app460" allowtransparency="true" frameborder="0" scrolling="no" tabindex="0" title="Disqus" width="100%" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/saved_resource.html" style="width: 100% !important; border: none !important; overflow: hidden !important; height: 240px !important; display: inline !important; box-sizing: border-box !important;" horizontalscrolling="no" verticalscrolling="no"></iframe></div><div id="disqus_thread"><iframe id="dsq-app8242" name="dsq-app8242" allowtransparency="true" frameborder="0" scrolling="no" tabindex="0" title="Disqus" width="100%" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/saved_resource(1).html" style="width: 1px !important; min-width: 100% !important; border: none !important; overflow: hidden !important; height: 411px !important;" horizontalscrolling="no" verticalscrolling="no"></iframe></div>
+        <script src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/disqus.js.download"></script>
+    </div>
+</section>
+
+
+    </div>
+
+    <footer class="ce-footer">
+    <div class="ce-wrapper">
+        <nav class="ce-menu-footer-primary">
+            <h2><a href="https://callistaenterprise.se/">Callista</a></h2>
+            <ul>
+                
+                <li><a href="https://callistaenterprise.se/om/">Om oss</a></li>
+                
+                <li><a href="https://callistaenterprise.se/erbjudanden/">Erbjudanden</a></li>
+                
+                <li><a href="https://callistaenterprise.se/event/">Event</a></li>
+                
+                <li><a href="https://callistaenterprise.se/blogg/">Blogg</a></li>
+                
+                <li><a href="https://callistaenterprise.se/om/jobb/">Jobba hos oss</a></li>
+                
+
+                
+                    
+                        <li><a href="https://callistaenterprise.se/english/">English</a></li>
+                    
+                
+            </ul>
+        </nav>
+        <div class="ce-addresses">
+            <div class="ce-address">
+                <h2>Stockholm</h2>
+                <address>
+                    Drottninggatan 55<br>
+                    111 21 Stockholm<br>
+                    Tel:
+                    <a href="tel:+468212142">
+                        +46 8 21 21 42
+                    </a>
+                </address>
+            </div>
+            <div class="ce-address">
+                <h2>Göteborg</h2>
+                <address>
+                    Fabriksgatan 13<br>
+                    412 50 Göteborg<br>
+                    Tel:
+                    <a href="tel:+4631201918">
+                        +46 31 20 19 18
+                    </a>
+                </address>
+            </div>
+        </div>
+        <div class="ce-social">
+            <h2>Följ oss</h2>
+            <ul>
+                <li>
+                    <a href="http://twitter.com/callistaent">
+                        <img alt="Twitters logotype" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/twitter.png">
+                        <span>@callistaent</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <small>© 2021 Callista Enterprise AB</small>
+        <hr style="margin: 1em 0 2em 0">
+        <div class="ce-footer-images">
+          <div class="ce-footer-image">
+            <a class="ce-raddabarnen" href="http://www.raddabarnen.se/foretag">
+                <img alt="Callista är Rädda Barnens företagsvän 2021" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/rb_vanforetag_2021_large-sv.png">
+            </a>
+          </div>
+        </div>
+        <br>
+        <div class="ce-footer-images">
+          <div class="ce-footer-image">
+            <a class="ce-di-gasell" href="http://www.di.se/gasell/">
+              <img alt="Callista utsett till DI Gasell tre år i rad" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/di_gasell_180x194.png">
+            </a>
+          </div>
+        </div>
+    </div>
+</footer>
+
+
+    <script src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/jquery.min.js.download"></script>
+    <script src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/owl.carousel.min.js.download"></script>
+    <script src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/prismjs.min.js.download"></script>
+    <script src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/app.js.download"></script>
+    <script src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/analytics.js(1).download"></script>
+    <script src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/jobinterestsubmit.js.download"></script>
+
+
+
+<iframe style="display: none;" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/saved_resource(2).html"></iframe><iframe style="display: none;" src="./Dynamic Multi Tenancy with Spring Boot, Hibernate and Liquibase Part 6_ Implementing the Shared Database with Discriminator Column pattern using Postgres Row Level Security _ Callista_files/saved_resource(3).html"></iframe></body></html>
